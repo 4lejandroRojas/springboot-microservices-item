@@ -3,6 +3,7 @@ package com.formacionbdi.springboot.app.item.springbootservicioitem.controllers;
 import com.formacionbdi.springboot.app.item.springbootservicioitem.models.Item;
 import com.formacionbdi.springboot.app.item.springbootservicioitem.models.Producto;
 import com.formacionbdi.springboot.app.item.springbootservicioitem.models.service.ItemService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,11 +29,16 @@ public class ItemController {
         return itemService.findAll();
     }
 
-    //@HystrixCommand(fallbackMethod = "metodoAlternativo")
     @GetMapping("/ver/{id}/cantidad/{cantidad}")
     public Item detalle(@PathVariable Long id, @PathVariable Integer cantidad){
         return cbFactory.create("items")
                 .run(() -> itemService.findById(id, cantidad), e -> metodoAlternativo(id, cantidad, e));
+    }
+
+    @CircuitBreaker(name = "items", fallbackMethod = "metodoAlternativo")
+    @GetMapping("/ver2/{id}/cantidad/{cantidad}")
+    public Item detalle2(@PathVariable Long id, @PathVariable Integer cantidad){
+        return itemService.findById(id, cantidad);
     }
 
     public Item metodoAlternativo(Long id, Integer cantidad, Throwable e) {
